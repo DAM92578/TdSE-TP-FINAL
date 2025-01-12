@@ -78,7 +78,10 @@ task_sub_menu_dta_t task_sub_menu_dta ={0,0};
 /********************** internal data definition *****************************/
 const char *p_task_menu 		= "Task Menu (Interactive Menu)";
 const char *p_task_menu_ 		= "Non-Blocking & Update By Time Code";
-
+uint32_t temp_amb_raw=0;
+uint32_t temp_uC_raw=0;
+uint32_t temp_amb=0;
+uint32_t temp_uC=0;
 
 /********************** external data declaration ****************************/
 uint32_t g_task_menu_cnt;
@@ -131,13 +134,6 @@ void task_menu_update(void *parameters)
 {
 	task_menu_dta_t         *p_task_menu_dta;
 	task_sub_menu_dta_t     *p_task_sub_menu_dta;
-	uint32_t temp_amb_raw=0;
-	uint32_t temp_Uc_raw=0;
-	uint32_t temp_amb=0;
-	uint32_t temp_Uc=0;
-
-
-
 
 	bool b_time_update_required = false;
     char menu_str[16];
@@ -194,17 +190,17 @@ void task_menu_update(void *parameters)
 	            	  	  	      p_task_menu_set_up_dta = & task_menu_set_up;
 
 		            	  			if ( true == any_value_task_adc()){
-		            	  				temp_Uc_raw  = get_value_task_adc();
+		            	  				temp_uC_raw  = get_value_task_adc();
 		            	  				temp_amb_raw = get_value_task_adc();
 		            	  			}
-		            	  			LOGGER_LOG("temp_Uc:%lu\r\n",temp_Uc_raw);
-		            	  			LOGGER_LOG("temp_amb:%lu\r\n",temp_amb_raw);
+		            	  			LOGGER_LOG("temp_uC_raw:%lu\r\n",temp_uC_raw);
+		            	  			LOGGER_LOG("temp_amb_raw:%lu\r\n",temp_amb_raw);
+
 	            	  	  	      displayCharPositionWrite(0, 0);
-
 		            	  	  	  temp_amb = (3.30 * 100 * temp_amb_raw)/(4096);
-		            	  	  	  temp_Uc   = ((1700-temp_Uc_raw)/4.3 )+25;
+		            	  	  	  temp_uC  = ((1700-temp_uC_raw)/4.3 )+25;
 
-	            	  	  	      snprintf(menu_str, sizeof(menu_str),"Ent/Nxt Uc:%lu ",temp_Uc);
+	            	  	  	      snprintf(menu_str, sizeof(menu_str),"Ent/Nxt T uC:%lu ",temp_uC);
 	            	  	  	      displayStringWrite(menu_str);
 
 	            	  			  displayCharPositionWrite(0,1);

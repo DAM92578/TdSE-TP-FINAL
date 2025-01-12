@@ -51,7 +51,7 @@
 #include "task_adc_interface.h"
 /********************** macros and definitions *******************************/
 #define VALUE_UNDEFINED	(255)
-#define MAX_VALUES		(60)
+#define MAX_VALUES		(30)
 
 /********************** internal data declaration ****************************/
 

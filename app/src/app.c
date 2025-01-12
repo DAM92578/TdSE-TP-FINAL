@@ -70,9 +70,13 @@ typedef struct {
 
 /********************** internal data declaration ****************************/
 const task_cfg_t task_cfg_list[]	= {
-		{task_adc_init,     task_adc_update,        NULL},
+
+
+
 		{task_sensor_init,	task_sensor_update, 	NULL},
+		{task_adc_init,     task_adc_update,        NULL},
 		{task_menu_init,	task_menu_update, 		NULL}
+
 
 };
 
