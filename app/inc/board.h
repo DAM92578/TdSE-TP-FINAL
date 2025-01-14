@@ -59,20 +59,76 @@ extern "C" {
 /* STM32 Nucleo Boards - 64 Pins */
 #if ((BOARD == NUCLEO_F103RC) || (BOARD == NUCLEO_F401RE) || (BOARD == NUCLEO_F446RE))
 
-#define BTN_ENT_PIN		D2_Pin
-#define BTN_ENT_PORT	D2_GPIO_Port
-#define BTN_ENT_PRESSED	GPIO_PIN_RESET
-#define BTN_ENT_HOVER	GPIO_PIN_SET
+/*/////////////////////////SENSORS//////////////////////////////*/
 
-#define BTN_NEX_PIN		D4_Pin
-#define BTN_NEX_PORT	D4_GPIO_Port
-#define BTN_NEX_PRESSED	GPIO_PIN_RESET
-#define BTN_NEX_HOVER	GPIO_PIN_SET
+#define BTN_ENT_PIN				D2_Pin
+#define BTN_ENT_PORT			D2_GPIO_Port
+#define BTN_ENT_PRESSED			GPIO_PIN_RESET
+#define BTN_ENT_HOVER			GPIO_PIN_SET
 
-#define LED_A_PIN		LD2_Pin
-#define LED_A_PORT		LD2_GPIO_Port
-#define LED_A_ON		GPIO_PIN_SET
-#define LED_A_OFF		GPIO_PIN_RESET
+#define BTN_NEX_PIN				D4_Pin
+#define BTN_NEX_PORT			D4_GPIO_Port
+#define BTN_NEX_PRESSED			GPIO_PIN_RESET
+#define BTN_NEX_HOVER			GPIO_PIN_SET
+
+#define BTN_ON_PIN				B2_Pin
+#define BTN_ON_PORT				B2_GPIO_Port
+#define BTN_ON_PRESSED			GPIO_PIN_RESET
+#define BTN_ON_HOVER			GPIO_PIN_SET
+
+#define SWITCH_OFF_PIN			C1_Pin
+#define SWITCH_OFF_PORT			C1_GPIO_Port
+#define SWITCH_OFF_PRESSED		GPIO_PIN_RESET
+#define SWITCH_OFF_HOVER		GPIO_PIN_SET
+
+#define SWITCH_FAILURE_PIN		B7_Pin
+#define SWITCH_FAILURE_PORT		B7_GPIO_Port
+#define SWITCH_FAILURE_PRESSED	GPIO_PIN_RESET
+#define SWITCH_FAILURE_HOVER	GPIO_PIN_SET
+
+#define SWITCH_AIRE_A_PIN		C0_Pin
+#define SWITCH_AIRE_A_PORT		C0_GPIO_Port
+#define SWITCH_AIRE_A_PRESSED	GPIO_PIN_RESET
+#define SWITCH_AIRE_A_HOVER		GPIO_PIN_SET
+
+#define SWITCH_AIRE_B_PIN		B4_Pin
+#define SWITCH_AIRE_B_PORT		B4_GPIO_Port
+#define SWITCH_AIRE_B_PRESSED	GPIO_PIN_RESET
+#define SWITCH_AIRE_B_HOVER		GPIO_PIN_SET
+
+
+/*/////////////////// ACTUATORS /////////////////////// */
+
+#define LED_A_PIN			LD2_Pin
+#define LED_A_PORT			LD2_GPIO_Port
+#define LED_A_ON			GPIO_PIN_SET
+#define LED_A_OFF			GPIO_PIN_RESET
+
+#define LED_AIRE_A_PIN		C9_Pin
+#define LED_AIRE_A_PORT		C9_GPIO_Port
+#define LED_AIRE_A_ON		GPIO_PIN_SET
+#define LED_AIRE_A_OFF		GPIO_PIN_RESET
+
+#define LED_AIRE_B_PIN		C6_Pin
+#define LED_AIRE_B_PORT		C6_GPIO_Port
+#define LED_AIRE_B_ON		GPIO_PIN_SET
+#define LED_AIRE_B_OFF		GPIO_PIN_RESET
+
+#define LED_USER_A_PIN		C12_Pin
+#define LED_USER_A_PORT		C12_GPIO_Port
+#define LED_USER_A_ON		GPIO_PIN_SET
+#define LED_USER_A_OFF		GPIO_PIN_RESET
+
+#define LED_USER_B_PIN		C10_Pin
+#define LED_USER_B_PORT		C10_GPIO_Port
+#define LED_USER_B_ON		GPIO_PIN_SET
+#define LED_USER_B_OFF		GPIO_PIN_RESET
+
+#define BUZZER_PIN			C8_Pin
+#define BUZZER_PORT			C8_GPIO_Port
+#define BUZZER_ON			GPIO_PIN_SET
+#define BUZZER_OFF			GPIO_PIN_RESET
+
 
 #endif/* STM32 Nucleo Boards - 144 Pins */
 
