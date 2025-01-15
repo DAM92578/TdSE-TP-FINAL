@@ -97,7 +97,8 @@ typedef enum task_sensor_id {ID_BTN_ENT,
 							 ID_BTN_ON,
 							 ID_SWITCH_OFF,
 							 ID_SWITCH_AIRE_A,
-							 ID_SWITCH_AIRE_B
+							 ID_SWITCH_AIRE_B,
+							 ID_SWITCH_FAILURE
 							} task_sensor_id_t;
 
 typedef struct

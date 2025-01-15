@@ -50,6 +50,8 @@
 #include "task_sensor_attribute.h"
 #include "task_menu_attribute.h"
 #include "task_menu_interface.h"
+#include "task_system_attribute.h"
+#include "task_system_interface.h"
 
 /********************** macros and definitions *******************************/
 #define G_TASK_SEN_CNT_INIT			0ul
@@ -62,15 +64,23 @@
 /********************** internal data declaration ****************************/
 const task_sensor_cfg_t task_sensor_cfg_list[] = {
 
-	{ID_BTN_ENT,  BTN_ENT_PORT,  BTN_ENT_PIN,  BTN_ENT_PRESSED, DEL_BTN_XX_MAX,
-	 EV_MEN_ENT_IDLE,  EV_MEN_ENT_ACTIVE},
-		{ID_BTN_NEX,  BTN_NEX_PORT,  BTN_NEX_PIN,  BTN_NEX_PRESSED, DEL_BTN_XX_MAX,
-		 EV_MEN_NEX_IDLE,  EV_MEN_NEX_ACTIVE}
+	{ID_BTN_ENT,  BTN_ENT_PORT,  BTN_ENT_PIN,  BTN_ENT_PRESSED, DEL_BTN_XX_MAX, EV_MEN_ENT_IDLE, EV_MEN_ENT_ACTIVE},
+	{ID_BTN_NEX,  BTN_NEX_PORT,  BTN_NEX_PIN,  BTN_NEX_PRESSED, DEL_BTN_XX_MAX, EV_MEN_NEX_IDLE, EV_MEN_NEX_ACTIVE},
+	{ID_BTN_ON,	  BTN_ON_PORT,   BTN_ON_PIN,   BTN_ON_PRESSED, 	DEL_BTN_XX_MAX, EV_MEN_ON_IDLE,  EV_MEN_NEX_ACTIVE},
+	{ID_SWITCH_OFF,	  	SWITCH_OFF_PORT,   	SWITCH_OFF_PIN,   SWITCH_OFF_PRESSED, 	DEL_BTN_XX_MAX, EV_SYS_OFF_IDLE,  EV_SYS_OFF_ACTIVE},
+	{ID_SWITCH_FAILURE,	SWITCH_FAILURE_PORT,  SWITCH_FAILURE_PIN,   SWITCH_FAILURE_PRESSED, 	DEL_BTN_XX_MAX, EV_SYS_FAILURE_IDLE,  EV_SYS_FAILURE_ACTIVE},
+	{ID_SWITCH_AIRE_A,	SWITCH_AIRE_A_PORT,  SWITCH_AIRE_A_PIN,   SWITCH_AIRE_A_PRESSED, 	DEL_BTN_XX_MAX, EV_SYS_SWITCH_AIRE_A_IDLE,  EV_SYS_SWITCH_AIRE_A_ACTIVE},
+	{ID_SWITCH_AIRE_B,	SWITCH_AIRE_B_PORT,  SWITCH_AIRE_B_PIN,   SWITCH_AIRE_B_PRESSED, 	DEL_BTN_XX_MAX, EV_SYS_SWITCH_AIRE_B_IDLE,  EV_SYS_SWITCH_AIRE_B_ACTIVE},
 };
 
 #define SENSOR_CFG_QTY	(sizeof(task_sensor_cfg_list)/sizeof(task_sensor_cfg_t))
 
 task_sensor_dta_t task_sensor_dta_list[] = {
+	{DEL_BTN_XX_MIN, ST_BTN_XX_UP, EV_BTN_XX_UP},
+	{DEL_BTN_XX_MIN, ST_BTN_XX_UP, EV_BTN_XX_UP},
+	{DEL_BTN_XX_MIN, ST_BTN_XX_UP, EV_BTN_XX_UP},
+	{DEL_BTN_XX_MIN, ST_BTN_XX_DOWN, EV_BTN_XX_DOWN},
+	{DEL_BTN_XX_MIN, ST_BTN_XX_UP, EV_BTN_XX_UP},
 	{DEL_BTN_XX_MIN, ST_BTN_XX_UP, EV_BTN_XX_UP},
 	{DEL_BTN_XX_MIN, ST_BTN_XX_UP, EV_BTN_XX_UP}
 };
@@ -184,11 +194,15 @@ void task_sensor_update(void *parameters)
 
 				case ST_BTN_XX_FALLING:
 
-					p_task_sensor_dta->tick--;
-					if (DEL_BTN_XX_MIN == p_task_sensor_dta->tick)
-					{
+					if (p_task_sensor_dta->tick > 0 ){
+						p_task_sensor_dta->tick --;
+					}
+
+					else {
+
 						if (EV_BTN_XX_DOWN == p_task_sensor_dta->event)
 						{
+							put_event_task_system(p_task_sensor_cfg->signal_down);
 							put_event_task_menu(p_task_sensor_cfg->signal_down);
 							p_task_sensor_dta->state = ST_BTN_XX_DOWN;
 						}
@@ -212,12 +226,15 @@ void task_sensor_update(void *parameters)
 
 				case ST_BTN_XX_RISING:
 
-					p_task_sensor_dta->tick--;
-					if (DEL_BTN_XX_MIN == p_task_sensor_dta->tick)
-					{
+					if (p_task_sensor_dta->tick > 0 ){
+						p_task_sensor_dta->tick --;
+					}
+
+					else {
 						if (EV_BTN_XX_UP == p_task_sensor_dta->event)
 						{
 							put_event_task_menu(p_task_sensor_cfg->signal_up);
+							put_event_task_system(p_task_sensor_cfg->signal_up);
 							p_task_sensor_dta->state = ST_BTN_XX_UP;
 						}
 						else
@@ -229,10 +246,9 @@ void task_sensor_update(void *parameters)
 					break;
 
 				default:
-
-					p_task_sensor_dta->tick  = DEL_BTN_XX_MIN;
-					p_task_sensor_dta->state = ST_BTN_XX_UP;
-					p_task_sensor_dta->event = EV_BTN_XX_UP;
+					//p_task_sensor_dta->tick  = DEL_BTN_XX_MIN;
+					//p_task_sensor_dta->state = ST_BTN_XX_UP;
+					//p_task_sensor_dta->event = EV_BTN_XX_UP;
 
 					break;
 			}
