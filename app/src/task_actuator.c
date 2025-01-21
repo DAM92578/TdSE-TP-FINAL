@@ -78,7 +78,8 @@ const task_actuator_cfg_t task_actuator_cfg_list[] = {
 
 task_actuator_dta_t task_actuator_dta_list[] = {
 	{DEL_LED_XX_MIN, ST_LED_XX_ON, EV_LED_XX_ON, false}, /// el primer aire comienza encendido (luz de usuario aire A)
-	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // Luz de usuario aire b
+	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // Luz de usuario aire A
+	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // Luz de usuario aire B
 	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // buzzer
 	{DEL_LED_XX_MIN, ST_LED_XX_BLINK, EV_LED_XX_BLINK, false}, /// primer aire comienza encendido (aire A)
 	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // aire b
@@ -218,7 +219,7 @@ void task_actuator_update(void *parameters)
 					break;
 
 				case ST_LED_XX_ON:
-					if (true == p_task_actuator_dta->flag)
+					//if (true == p_task_actuator_dta->flag)
 					{
 						switch(p_task_actuator_dta->event){
 							case EV_LED_XX_OFF:
@@ -251,7 +252,7 @@ void task_actuator_update(void *parameters)
 					break;
 
 				case ST_LED_XX_BLINK:
-					if (true == p_task_actuator_dta->flag)
+					//if (true == p_task_actuator_dta->flag)
 					{
 						switch(p_task_actuator_dta->event){
 
