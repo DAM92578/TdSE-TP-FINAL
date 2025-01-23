@@ -51,6 +51,7 @@
 #include "task_adc_interface.h"
 #include "task_menu_attribute.h"
 #include "task_menu_interface.h"
+
 /********************** macros and definitions *******************************/
 #define G_TASK_MEN_CNT_INI			0ul
 #define G_TASK_MEN_TICK_CNT_INI		0ul
@@ -78,10 +79,13 @@ task_sub_menu_dta_t task_sub_menu_dta ={0,0};
 /********************** internal data definition *****************************/
 const char *p_task_menu 		= "Task Menu (Interactive Menu)";
 const char *p_task_menu_ 		= "Non-Blocking & Update By Time Code";
+
+/*
 uint32_t temp_amb_raw=0;
 uint32_t temp_uC_raw=0;
 uint32_t temp_amb=0;
 uint32_t temp_uC=0;
+*/
 
 /********************** external data declaration ****************************/
 uint32_t g_task_menu_cnt;
@@ -189,12 +193,14 @@ void task_menu_update(void *parameters)
 				case ST_MAIN_MENU:
 	            	  	  	      p_task_menu_set_up_dta = & task_menu_set_up;
 
-		            	  			if ( true == any_value_task_adc()){
-		            	  				temp_uC_raw  = get_value_task_adc();
-		            	  				temp_amb_raw = get_value_task_adc();
-		            	  			}
-		            	  			LOGGER_LOG("temp_uC_raw:%lu\r\n",temp_uC_raw);
-		            	  			LOGGER_LOG("temp_amb_raw:%lu\r\n",temp_amb_raw);
+		            	  	/*
+									if ( true == any_value_task_adc()){
+										temp_uC_raw  = get_value_task_adc();
+										temp_amb_raw = get_value_task_adc();
+									}
+									LOGGER_LOG("temp_uC_raw:%lu\r\n",temp_uC_raw);
+									LOGGER_LOG("temp_amb_raw:%lu\r\n",temp_amb_raw);
+
 
 	            	  	  	      displayCharPositionWrite(0, 0);
 		            	  	  	  temp_amb = (3.30 * 100 * temp_amb_raw)/(4096);
@@ -207,7 +213,7 @@ void task_menu_update(void *parameters)
 	            	  			  snprintf(menu_str, sizeof(menu_str),"Tamb:%lu Tset:%lu ",temp_amb,p_task_menu_set_up_dta->set_point_temperatura);
 	            	  			  displayStringWrite(menu_str);
 
-
+							*/
 
 	            	    	  	  if ((true == p_task_menu_dta->flag) && (EV_MEN_ENT_ACTIVE == p_task_menu_dta->event)){
 	            	   	  	  		  p_task_menu_dta->flag = false;

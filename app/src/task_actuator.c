@@ -54,8 +54,8 @@
 #define G_TASK_ACT_CNT_INIT			0ul
 #define G_TASK_ACT_TICK_CNT_INI		0ul
 
-#define DEL_LED_XX_PUL				500ul
-#define DEL_LED_XX_BLI				5000ul
+#define DEL_LED_XX_PUL				250ul
+#define DEL_LED_XX_BLI				1000ul
 #define DEL_LED_XX_MIN				0ul
 
 /********************** internal data declaration ****************************/
@@ -63,7 +63,7 @@ const task_actuator_cfg_t task_actuator_cfg_list[] = {
 	{ID_LED_A,  LED_A_PORT,  LED_A_PIN, LED_A_ON,  LED_A_OFF,
 	 DEL_LED_XX_BLI, DEL_LED_XX_PUL},
 	{ID_LED_AIRE_B,  LED_AIRE_B_PORT,  LED_AIRE_B_PIN, LED_AIRE_B_ON,  LED_AIRE_B_OFF,
-	 	 DEL_LED_XX_BLI, DEL_LED_XX_PUL},
+		 DEL_LED_XX_BLI, DEL_LED_XX_PUL},
 	{ID_LED_AIRE_A,  LED_AIRE_A_PORT,  LED_AIRE_A_PIN, LED_AIRE_A_ON,  LED_AIRE_A_OFF,
 				 DEL_LED_XX_BLI, DEL_LED_XX_PUL},
 	{ID_BUZZER,  BUZZER_PORT,  BUZZER_PIN, BUZZER_ON,  BUZZER_OFF,
@@ -77,13 +77,12 @@ const task_actuator_cfg_t task_actuator_cfg_list[] = {
 #define ACTUATOR_CFG_QTY	(sizeof(task_actuator_cfg_list)/sizeof(task_actuator_cfg_t))
 
 task_actuator_dta_t task_actuator_dta_list[] = {
-	{DEL_LED_XX_MIN, ST_LED_XX_ON, EV_LED_XX_ON, false}, /// el primer aire comienza encendido (luz de usuario aire A)
-	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // Luz de usuario aire A
+	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false},
+	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // Luz de usuario aire A Comienza encendido
 	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // Luz de usuario aire B
 	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // buzzer
-	{DEL_LED_XX_MIN, ST_LED_XX_BLINK, EV_LED_XX_BLINK, false}, /// primer aire comienza encendido (aire A)
+	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, /// primer aire comienza encendido (aire A)
 	{DEL_LED_XX_MIN, ST_LED_XX_OFF, EV_LED_XX_OFF, false}, // aire b
-
 };
 
 #define ACTUATOR_DTA_QTY	(sizeof(task_actuator_dta_list)/sizeof(task_actuator_dta_t))
@@ -136,6 +135,7 @@ void task_actuator_init(void *parameters)
 		LOGGER_LOG("   %s = %s\r\n", GET_NAME(b_event), (b_event ? "true" : "false"));
 
 		HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
+
 	}
 
 	g_task_actuator_tick_cnt = G_TASK_ACT_TICK_CNT_INI;
@@ -182,174 +182,164 @@ void task_actuator_update(void *parameters)
 			p_task_actuator_dta = &task_actuator_dta_list[index];
 
 			switch (p_task_actuator_dta->state)
-			{
-				case ST_LED_XX_OFF:
-					///////// if ( verifico que se halla enviado una task al actuator --> su flag esta en true Y me fijo que evento se le envio al actuador )
-					if (true == p_task_actuator_dta->flag)
-					{
-						switch(p_task_actuator_dta->event){
-							case EV_LED_XX_ON:
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								p_task_actuator_dta->state = ST_LED_XX_ON;
+						{
+							case ST_LED_XX_OFF:
+								///////// if ( verifico que se halla enviado una task al actuator --> su flag esta en true Y me fijo que evento se le envio al actuador )
+								if (true == p_task_actuator_dta->flag)
+								{
+									p_task_actuator_dta->flag = false;
+
+									switch(p_task_actuator_dta->event){
+										case EV_LED_XX_ON:
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
+											p_task_actuator_dta->state = ST_LED_XX_ON;
+											break;
+
+										case EV_LED_XX_OFF:
+											break;
+
+										case EV_LED_XX_BLINK: // si se envia un evento de blink, se prende el led y se setea el tick en maximo de blink
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
+											p_task_actuator_dta->tick = p_task_actuator_cfg->tick_blink;
+											p_task_actuator_dta->state = ST_LED_XX_BLINK;
+											break;
+
+										case EV_LED_XX_PULSE: // si se envia un evento de pulse, se prende el led y se setea el tick maximo de pulse
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
+											p_task_actuator_dta->tick = p_task_actuator_cfg->tick_pulse;
+											p_task_actuator_dta->state = ST_LED_XX_PULSE;
+											break;
+
+										default:
+											break;
+									}
+								}
 								break;
 
-							case EV_LED_XX_OFF:
-								p_task_actuator_dta->flag = false;
+							case ST_LED_XX_ON:
+								if (true == p_task_actuator_dta->flag)
+								{
+									p_task_actuator_dta->flag = false;
+
+									switch(p_task_actuator_dta->event){
+										case EV_LED_XX_OFF:
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
+											p_task_actuator_dta->state = ST_LED_XX_OFF;
+											break;
+
+										case EV_LED_XX_ON:
+											break;
+
+										case EV_LED_XX_BLINK: // si se envia un evento de blink, se setea el tick en maximo de blink
+											p_task_actuator_dta->tick = p_task_actuator_cfg->tick_blink;
+											p_task_actuator_dta->state = ST_LED_XX_BLINK;
+											break;
+
+										case EV_LED_XX_PULSE: // si se envia un evento de pulse, se setea el tick maximo de pulse
+											p_task_actuator_dta->tick = p_task_actuator_cfg->tick_pulse;
+											p_task_actuator_dta->state = ST_LED_XX_PULSE;
+											break;
+
+										default:
+											break;
+									}
+								}
 								break;
 
-							case EV_LED_XX_BLINK: // si se envia un evento de blink, se prende el led y se setea el tick en maximo de blink
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								p_task_actuator_dta->tick = p_task_actuator_cfg->tick_blink;
-								p_task_actuator_dta->state = ST_LED_XX_BLINK;
+							case ST_LED_XX_BLINK:
+								//if (true == p_task_actuator_dta->flag)
+								{
+									p_task_actuator_dta->flag = false;
+
+									switch(p_task_actuator_dta->event){
+
+										case EV_LED_XX_OFF:
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
+											p_task_actuator_dta->state = ST_LED_XX_OFF;
+											break;
+
+										case EV_LED_XX_ON:
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
+											p_task_actuator_dta->state = ST_LED_XX_ON;
+											break;
+
+										case EV_LED_XX_BLINK: // disminuyo el tick de blink y si llego a 0, cambio el estado del led
+											if(p_task_actuator_dta->tick == p_task_actuator_cfg->tick_blink/2 ){
+												HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
+											}
+
+											if (p_task_actuator_dta->tick == 0)
+											{
+												// apago el led y reinicio el timer
+												HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
+												p_task_actuator_dta->tick = p_task_actuator_cfg->tick_blink;
+											}
+											else
+											{
+												p_task_actuator_dta->tick--;
+											}
+
+											break;
+
+										case EV_LED_XX_PULSE: // si se envia un evento de pulse, se apaga el led y se setea el tick maximo de pulse
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
+											p_task_actuator_dta->tick = p_task_actuator_cfg->tick_pulse;
+											p_task_actuator_dta->state = ST_LED_XX_PULSE;
+											break;
+
+										default:
+											break;
+									}
+								}
 								break;
 
-							case EV_LED_XX_PULSE: // si se envia un evento de pulse, se prende el led y se setea el tick maximo de pulse
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								p_task_actuator_dta->tick = p_task_actuator_cfg->tick_pulse;
-								p_task_actuator_dta->state = ST_LED_XX_PULSE;
+							case ST_LED_XX_PULSE:
+								//if (true == p_task_actuator_dta->flag)
+								{
+									p_task_actuator_dta->flag = false;
+									switch(p_task_actuator_dta->event){
+										case EV_LED_XX_OFF: // aca estos dos eventos dan el mismo resultado, apagar el led y mandarlo a estado off. PREGUNTAR A JUAN SI ESTA BIEN
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
+											p_task_actuator_dta->state = ST_LED_XX_OFF;
+											break;
+
+										case EV_LED_XX_ON:
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
+											p_task_actuator_dta->state = ST_LED_XX_ON;
+											break;
+
+										case EV_LED_XX_BLINK: // si se envia un evento de blink, se apaga el led y se setea el tick en maximo de blink
+											HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
+											p_task_actuator_dta->tick = p_task_actuator_cfg->tick_blink;
+											p_task_actuator_dta->state = ST_LED_XX_BLINK;
+											break;
+
+										case EV_LED_XX_PULSE: // si se envia un evento de pulse, se apaga el led y se setea el tick maximo de pulse
+											if (p_task_actuator_dta->tick == p_task_actuator_cfg->tick_pulse/2){
+												HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
+											}
+											if (p_task_actuator_dta->tick == 0)
+											{
+												// apago el led y reinicio el timer
+												HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
+												p_task_actuator_dta->tick = p_task_actuator_cfg->tick_pulse;
+											}
+											else
+											{
+												p_task_actuator_dta->tick--;
+											}
+											break;
+
+										default:
+											break;
+									}
+								}
 								break;
 
 							default:
 								break;
 						}
 					}
-					break;
-
-				case ST_LED_XX_ON:
-					//if (true == p_task_actuator_dta->flag)
-					{
-						switch(p_task_actuator_dta->event){
-							case EV_LED_XX_OFF:
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
-								p_task_actuator_dta->state = ST_LED_XX_OFF;
-								break;
-
-							case EV_LED_XX_ON:
-								p_task_actuator_dta->flag = false;
-								break;
-
-							case EV_LED_XX_BLINK: // si se envia un evento de blink, se apaga el led y se setea el tick en maximo de blink
-								p_task_actuator_dta->flag = false;
-								p_task_actuator_dta->tick = p_task_actuator_cfg->tick_blink;
-								p_task_actuator_dta->state = ST_LED_XX_BLINK;
-								break;
-
-							case EV_LED_XX_PULSE: // si se envia un evento de pulse, se apaga el led y se setea el tick maximo de pulse
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								p_task_actuator_dta->tick = p_task_actuator_cfg->tick_pulse;
-								p_task_actuator_dta->state = ST_LED_XX_PULSE;
-								break;
-
-							default:
-								break;
-						}
-					}
-					break;
-
-				case ST_LED_XX_BLINK:
-					//if (true == p_task_actuator_dta->flag)
-					{
-						switch(p_task_actuator_dta->event){
-
-							case EV_LED_XX_OFF:
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
-								p_task_actuator_dta->state = ST_LED_XX_OFF;
-								break;
-
-							case EV_LED_XX_ON:
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								p_task_actuator_dta->state = ST_LED_XX_ON;
-								break;
-
-							case EV_LED_XX_BLINK: // disminuyo el tick de blink y si llego a 0, cambio el estado del led
-								p_task_actuator_dta->flag = false;
-								if(p_task_actuator_dta->tick <= p_task_actuator_cfg->tick_blink/2 ){
-									HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								}
-
-								if (p_task_actuator_dta->tick == 0)
-								{
-									// apago el led y reinicio el timer
-									HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
-									p_task_actuator_dta->tick = p_task_actuator_cfg->tick_blink;
-								}
-								else
-								{
-									p_task_actuator_dta->tick--;
-								}
-
-								break;
-
-							case EV_LED_XX_PULSE: // si se envia un evento de pulse, se apaga el led y se setea el tick maximo de pulse
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								p_task_actuator_dta->tick = p_task_actuator_cfg->tick_pulse;
-								p_task_actuator_dta->state = ST_LED_XX_PULSE;
-								break;
-
-							default:
-								break;
-						}
-					}
-					break;
-
-				case ST_LED_XX_PULSE:
-					if (true == p_task_actuator_dta->flag)
-					{
-						switch(p_task_actuator_dta->event){
-							case EV_LED_XX_OFF: // aca estos dos eventos dan el mismo resultado, apagar el led y mandarlo a estado off. PREGUNTAR A JUAN SI ESTA BIEN
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
-								p_task_actuator_dta->state = ST_LED_XX_OFF;
-								break;
-
-							case EV_LED_XX_ON:
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								p_task_actuator_dta->state = ST_LED_XX_ON;
-								break;
-
-							case EV_LED_XX_BLINK: // si se envia un evento de blink, se apaga el led y se setea el tick en maximo de blink
-								p_task_actuator_dta->flag = false;
-								HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
-								p_task_actuator_dta->tick = p_task_actuator_cfg->tick_blink;
-								p_task_actuator_dta->state = ST_LED_XX_BLINK;
-								break;
-
-							case EV_LED_XX_PULSE: // si se envia un evento de pulse, se apaga el led y se setea el tick maximo de pulse
-								p_task_actuator_dta->flag = false;
-								if (p_task_actuator_dta->tick <= p_task_actuator_cfg->tick_pulse/2){
-									HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_on);
-								}
-								if (p_task_actuator_dta->tick == 0)
-								{
-									// apago el led y reinicio el timer
-									HAL_GPIO_WritePin(p_task_actuator_cfg->gpio_port, p_task_actuator_cfg->pin, p_task_actuator_cfg->led_off);
-									p_task_actuator_dta->tick = p_task_actuator_cfg->tick_pulse;
-								}
-								else
-								{
-									p_task_actuator_dta->tick--;
-								}
-								break;
-
-							default:
-								break;
-						}
-					}
-					break;
-
-				default:
-					break;
-			}
-		}
     }
 }
 

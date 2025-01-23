@@ -47,11 +47,16 @@
 /* Application & Tasks includes. */
 #include "board.h"
 #include "app.h"
+
 #include "task_system_attribute.h"
 #include "task_system_interface.h"
+
 #include "task_actuator_attribute.h"
 #include "task_actuator_interface.h"
 
+#include "display.h"
+#include "task_adc_interface.h"
+#include "task_adc_attribute.h"
 /********************** macros and definitions *******************************/
 #define G_TASK_SYS_CNT_INI			0ul
 #define G_TASK_SYS_TICK_CNT_INI		0ul
@@ -63,21 +68,27 @@
 ////////////////////////// Estos son placeholders los tiene que levantar del set up menu ////////////////
 #define MAX_TICK_ALARM				2000ul
 #define MAX_TICK_SWITCH				10000ul
+#define TEMP_MAX_USER				50
 
 /********************** internal data declaration ****************************/
 task_system_dta_t task_system_dta =
-	{DEL_SYS_XX_MIN, ST_SYS_XX_IDLE, EV_SYS_BTN_ON_ACTIVE, false};
+	{DEL_SYS_XX_MIN, ST_SYS_XX_MONITOR, EV_SYS_BTN_ON_IDLE, false};
 
 #define SYSTEM_DTA_QTY	(sizeof(task_system_dta)/sizeof(task_system_dta_t))
 
 uint32_t counter_tick= 0;
-uint32_t tempAmb = 0;
 bool 	switch_motors_flag = false;
 /********************** internal functions declaration ***********************/
 
 /********************** internal data definition *****************************/
 const char *p_task_system 		= "Task System (System Statechart)";
 const char *p_task_system_ 		= "Non-Blocking & Update By Time Code";
+
+uint32_t temp_amb_raw=0;
+uint32_t temp_uC_raw=0;
+uint32_t temp_amb=0;
+uint32_t temp_uC=0;
+
 
 /********************** external data declaration ****************************/
 uint32_t g_task_system_cnt;
@@ -123,6 +134,9 @@ void task_system_update(void *parameters)
 	task_system_dta_t *p_task_system_dta;
 	bool b_time_update_required = false;
 
+    char display_str[16];
+
+
 	/* Update Task System Counter */
 	g_task_system_cnt++;
 
@@ -160,17 +174,21 @@ void task_system_update(void *parameters)
 		}
 
 		//// ACA LEVANTAR EL ADC Y LIMITE DEL USUARIO -> PASAR A EV_SYS_FAILURE_ACTIVE SI PASA EL LIMITE DEL USUARIO
-		/*
+
 		if ( true == any_value_task_adc())
 		{
-			temp_amb=get_value_task_adc();
-			lm35_temp = (3.30 * 100 * temp_amb)/(4096);
+			temp_uC_raw  = get_value_task_adc();
+			temp_amb_raw = get_value_task_adc();
 
-			if( lm35_temp > TEMP_MAX_USER ){
+			temp_amb = (3.30 * 100 * temp_amb_raw)/(4096);
+			LOGGER_LOG("temp_uC_raw:%lu\r\n",temp_uC_raw);
+			LOGGER_LOG("temp_amb_raw:%lu\r\n",temp_amb);
+
+			if( temp_amb > TEMP_MAX_USER ){
 				p_task_system_dta->event = EV_SYS_FAILURE_ACTIVE;
 			}
 		}
-		*/
+
 		 if(HAL_GPIO_ReadPin(SWITCH_FAILURE_PORT, SWITCH_FAILURE_PIN) == SWITCH_FAILURE_PRESSED)
 		 {
 		 	p_task_system_dta->event = EV_SYS_FAILURE_ACTIVE;
@@ -178,7 +196,7 @@ void task_system_update(void *parameters)
 
 		/// verifico que el switch de off no este activado si lo esta overwrite de evento a off.
 
-		 if(HAL_GPIO_ReadPin(SWITCH_OFF_PORT, SWITCH_OFF_PIN) == SWITCH_OFF_PRESSED)
+		 if(HAL_GPIO_ReadPin(SWITCH_OFF_PORT, SWITCH_OFF_PIN) == SWITCH_OFF_HOVER)
 		 {
 		 	p_task_system_dta->event = EV_SYS_SWITCH_OFF_ACTIVE;
 		 }
@@ -186,33 +204,26 @@ void task_system_update(void *parameters)
 		switch (p_task_system_dta->state)
 		{
 			case ST_SYS_XX_OFF:
-				if (true == p_task_system_dta->flag){
+				//if (true == p_task_system_dta->flag)
+				{
 					p_task_system_dta->flag = false;
-					switch(p_task_system_dta->event)
-					{
+					if(HAL_GPIO_ReadPin(SWITCH_OFF_PORT, SWITCH_OFF_PIN) == SWITCH_OFF_PRESSED){
 
-						case EV_SYS_SWITCH_OFF_IDLE:
+						put_event_task_actuator(EV_LED_XX_ON, ID_LED_USER_A);
+						put_event_task_actuator(EV_LED_XX_BLINK, ID_LED_AIRE_A);
+						p_task_system_dta->tick = MAX_TICK_SWITCH;
+						p_task_system_dta->state = ST_SYS_XX_MONITOR;
 
-							put_event_task_actuator(EV_LED_XX_ON, ID_LED_USER_A);
-							put_event_task_actuator(EV_LED_XX_BLINK, ID_LED_AIRE_A);
-							p_task_system_dta->tick = MAX_TICK_SWITCH;
-							p_task_system_dta->state = ST_SYS_XX_MONITOR;
-
-							break;
-
-						default:
-							break;
 					}
 				}
 				break;
 
 			case ST_SYS_XX_IDLE: //el usuario esta interactuando con el menu solo sale del menu cuando detecte el btn on active ignora todo excepto el switch off
 
-				if (true == p_task_system_dta->flag)
+				//if (true == p_task_system_dta->flag)
 				{
 
 					p_task_system_dta->flag = false;
-
 					switch(p_task_system_dta->event)
 					{
 						case EV_SYS_SWITCH_OFF_ACTIVE:	//apagar todo
@@ -228,6 +239,15 @@ void task_system_update(void *parameters)
 						case EV_SYS_BTN_ON_ACTIVE: //levanta la nueva temp del usuario y pasa a state monitor
 
 							//LEVANTAR NUEVA TEMP MAX DE USUARIO y tiempo de switch
+
+							//reinicio a sistema inicial prendo el aire A
+							put_event_task_actuator(EV_LED_XX_ON, ID_LED_USER_A);
+							put_event_task_actuator(EV_LED_XX_BLINK, ID_LED_AIRE_A);
+
+							//apago la luz de config de B
+							put_event_task_actuator(EV_LED_XX_OFF, ID_LED_USER_B);
+
+							//reinicio el clock y paso a estado de monitoreo
 							p_task_system_dta->tick = MAX_TICK_SWITCH;
 							p_task_system_dta->state = ST_SYS_XX_MONITOR;
 							break;
@@ -243,9 +263,9 @@ void task_system_update(void *parameters)
 				break;
 
 			case ST_SYS_XX_ACTIVE:
-				if (true == p_task_system_dta->flag){
+			//	if (true == p_task_system_dta->flag)
+				{
 					p_task_system_dta->flag = false;
-
 					switch(p_task_system_dta->event){
 
 						case EV_SYS_SWITCH_OFF_ACTIVE://apagar todo
@@ -280,26 +300,36 @@ void task_system_update(void *parameters)
 							else
 							{
 								//hago el switch de motores y reinicio el tiempo al seteado por el usuario
-								if (HAL_GPIO_ReadPin(LED_AIRE_B_PORT, LED_AIRE_B_PIN) == LED_AIRE_B_ON ){ //si el aire B esta prendido
+								if (HAL_GPIO_ReadPin(LED_AIRE_B_PORT, LED_AIRE_B_PIN) == LED_AIRE_B_ON && HAL_GPIO_ReadPin(SWITCH_AIRE_B_PORT, SWITCH_AIRE_B_PIN) == SWITCH_AIRE_B_PRESSED )
+								{ //si el aire B esta prendido y habilitado por su switch
 
 									put_event_task_actuator(EV_LED_XX_OFF,ID_LED_USER_B);
 									put_event_task_actuator(EV_LED_XX_ON,ID_LED_USER_A);
 
 									put_event_task_actuator(EV_LED_XX_OFF,ID_LED_AIRE_B);
 									put_event_task_actuator(EV_LED_XX_BLINK,ID_LED_AIRE_A);
+
+									p_task_system_dta->tick = MAX_TICK_SWITCH;
+									p_task_system_dta->state = ST_SYS_XX_MONITOR;
 								}
-								else{
+								else if (HAL_GPIO_ReadPin(SWITCH_AIRE_A_PORT, SWITCH_AIRE_A_PIN) == SWITCH_AIRE_A_PRESSED )
+								{
 									put_event_task_actuator(EV_LED_XX_ON,ID_LED_USER_B);
 									put_event_task_actuator(EV_LED_XX_OFF,ID_LED_USER_A);
 
 									put_event_task_actuator(EV_LED_XX_BLINK,ID_LED_AIRE_B);
 									put_event_task_actuator(EV_LED_XX_OFF,ID_LED_AIRE_A);
+
+									p_task_system_dta->tick = MAX_TICK_SWITCH;
+									p_task_system_dta->state = ST_SYS_XX_MONITOR;
+								}
+								else {
+									// ningun aire funciona prendo el buzzer y doy un mensaje por display
+									put_event_task_actuator(EV_LED_XX_PULSE, ID_BUZZER);
+						     	 	displayCharPositionWrite(0, 0);
+						     	 	displayStringWrite("ERROR: AC NOT FOUND");
 								}
 
-								//verifico que el switch de failure y el de aire esten up
-
-								p_task_system_dta->tick = MAX_TICK_SWITCH;
-								p_task_system_dta->state = ST_SYS_XX_MONITOR; //paso a estado de monitoreo (default)
 							}
 							break;
 					}
@@ -325,6 +355,7 @@ void task_system_update(void *parameters)
 							p_task_system_dta->state = ST_SYS_XX_OFF;
 							break;
 
+						//case EV_MEN_ENT_ACTIVE:
 						case EV_SYS_BTN_ON_ACTIVE:
 							// entro en estado idle mientras se usa el menu apago todo y pongo las leds de user en modo config (blink)
 
@@ -358,20 +389,30 @@ void task_system_update(void *parameters)
 								//	put_event_task_actuator(EV_LED_XX_ON,ID_LED_USER_A);
 									put_event_task_actuator(EV_LED_XX_BLINK,ID_LED_AIRE_A);
 								}
-
-							/*
-								displayCharPositionWrite(0,1);
-								 snprintf(display_str, sizeof(display_str),"Tamb:%lu Tset:%lu ",lm35_temp,p_set_up_dta->set_point_temperatura);
-
-								 displayStringWrite(display_str);
-							*/
-
 								p_task_system_dta->tick--;
 							}
 							else{
 								switch_motors_flag = true;
 								p_task_system_dta->state = ST_SYS_XX_ACTIVE;
 							}
+
+							//////////////// ACTUALIZA DISPLAY ////////////////////
+
+							//LOGGER_LOG("temp_uC_raw:%lu\r\n",temp_uC_raw);
+							//LOGGER_LOG("temp_amb_raw:%lu\r\n",temp_amb_raw);
+
+							displayCharPositionWrite(0, 0);
+							temp_amb = (3.30 * 100 * temp_amb_raw)/(4096);
+							temp_uC  = ((1700-temp_uC_raw)/4.3 )+25;
+
+
+							snprintf(display_str, sizeof(display_str),"Ent/Nxt T uC:%lu ",temp_uC);
+							displayStringWrite(display_str);
+
+							displayCharPositionWrite(0,1);
+							snprintf(display_str, sizeof(display_str),"Tamb:%lu Tset:%i ",temp_amb,TEMP_MAX_USER);//temp_amb,p_task_menu_set_up_dta->set_point_temperatura);
+							displayStringWrite(display_str);
+
 							break;
 					}// switch
 				}// if(true == p_task_system_dta->flag)

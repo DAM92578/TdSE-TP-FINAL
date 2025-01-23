@@ -91,7 +91,7 @@ void task_adc_update(void *parameters){
 		      HAL_ADC_Start_DMA(&hadc1, ADC_VAL, 2);
 		      sample_cnt++;
 		      sample_to_take=false;}
-              }
+     }
 	else{
 		  averaged_1 = averaged_1 / AVERAGER_SIZE;
 		  averaged_2 = averaged_2 / AVERAGER_SIZE;
